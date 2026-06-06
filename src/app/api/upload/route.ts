@@ -1,49 +1,48 @@
+import { NextRequest } from "next/server";
 import cloudinary from "@/lib/cloudinary";
-import { NextResponse } from "next/server";
+import { withErrorHandler, successResponse } from "@/lib/api-handler";
+import { ValidationError, AppError } from "@/lib/error";
+import { logger } from "@/lib/logger";
 
-export async function POST(req: Request) {
-  console.log("Cloud name:", process.env.CLOUDINARY_CLOUD_NAME);
-  console.log("API Key:", process.env.CLOUDINARY_API_KEY);
-  console.log("API Key:", process.env.CLOUDINARY_API_SECRET);
-  try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
 
-    if (!file) {
-      return NextResponse.json({ error: "No File Provided" }, { status: 400 });
-    }
-    // File size check — 2MB limit
-    if (file.size > 2 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "Image must be under 2MB" },
-        { status: 400 },
-      );
-    }
-    // File type check
-    const validTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!validTypes) {
-      return NextResponse.json(
-        { error: "Only JPG, PNG, or WebP allowed" },
-        { status: 400 },
-      );
-    }
-    // File → Buffer → Base64
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  const formData = await req.formData();
+  const file = formData.get("file") as File | null;
 
-    // Cloudinary-> upload
-    const result = await cloudinary.uploader.upload(base64, {
-      folder: "ai-interview-preparetion/avatars",
-      transformation: [
-        { width: 400, height: 400, crop: "fill", gravity: "face" },
-        { quality: "auto", fetch_format: "auto" },
-      ],
-    });
-    console.log("Cloudinary result:", result.secure_url);
-    return NextResponse.json({ url: result.secure_url });
-  } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+  if (!file) {
+    throw new ValidationError("No file provided");
   }
-}
+
+  if (file.size > MAX_SIZE_BYTES) {
+    throw new ValidationError("Image must be under 2MB");
+  }
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new ValidationError("Only JPG, PNG, or WebP allowed");
+  }
+
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+  const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
+
+  const result = await cloudinary.uploader.upload(base64, {
+    folder: "ai-interview-prep/avatars",
+    transformation: [
+      { width: 400, height: 400, crop: "fill", gravity: "face" },
+      { quality: "auto", fetch_format: "auto" },
+    ],
+  });
+
+  if (!result.secure_url) {
+    throw new AppError("Upload failed — no URL returned", 500, "UPLOAD_FAILED");
+  }
+
+  logger.info("Image uploaded", { publicId: result.public_id });
+
+  return successResponse(
+    { url: result.secure_url },
+    "Image uploaded successfully",
+  );
+});

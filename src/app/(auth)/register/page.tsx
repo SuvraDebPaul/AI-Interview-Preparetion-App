@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import {
 import ImageUpload from "@/components/shared/ImageUpload";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -48,8 +46,8 @@ export default function RegisterPage() {
         const uploadText = await uploadRes.text();
         const uploadData = JSON.parse(uploadText);
 
-        if (!uploadRes.ok) {
-          setError(uploadData.error || "Image upload failed");
+        if (!uploadRes.ok || !uploadData?.url) {
+          setError(uploadData.error.message || "Image upload failed");
           setLoading(false);
           return;
         }
@@ -66,7 +64,7 @@ export default function RegisterPage() {
 
       const data = await res.json();
 
-      if (!res.ok) setError(data.error);
+      if (!res.ok) setError(data.error.message);
       else setSuccess(data.message);
     } catch {
       setError("Something went wrong. Try again.");
