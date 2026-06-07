@@ -1,64 +1,133 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
-export default function VerifyEmailPage() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading",
-  );
-  const [message, setMessage] = useState("");
+export const metadata: Metadata = {
+  title: "Verify Email — AI Interview Prep",
+};
 
-  useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setMessage("No token provided.");
-      return;
+interface Props {
+  searchParams: Promise<{ token?: string }>;
+}
+
+// token verify করে result return করে — JSX নেই এখানে
+async function verifyToken(
+  token: string,
+): Promise<{ success: boolean; message: string } | "redirect"> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { emailVerifyToken: token },
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Invalid or expired verification link. Please register again.",
+      };
     }
 
-    fetch(`/api/auth/verify-email?token=${token}`)
-      .then((res) => {
-        if (res.redirected || res.ok) {
-          setStatus("success");
-          setMessage("Email verified! You can now log in.");
-        } else {
-          setStatus("error");
-          setMessage("Invalid or expired verification link.");
-        }
-      })
-      .catch(() => {
-        setStatus("error");
-        setMessage("Something went wrong.");
-      });
-  }, [token]);
+    if (user.emailVerified) {
+      return "redirect";
+    }
 
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: new Date(),
+        emailVerifyToken: null,
+      },
+    });
+
+    return "redirect";
+  } catch {
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
+  }
+}
+
+export default async function VerifyEmailPage({ searchParams }: Props) {
+  const { token } = await searchParams;
+
+  // Token নেই
+  if (!token) {
+    return (
+      <VerifyResult success={false} message="No verification token provided." />
+    );
+  }
+
+  // Verify করো — try/catch এর বাইরে JSX
+  const result = await verifyToken(token);
+
+  if (result === "redirect") {
+    redirect("/login?verified=true");
+  }
+
+  // JSX try/catch এর বাইরে — safe
+  return <VerifyResult success={result.success} message={result.message} />;
+}
+
+function VerifyResult({
+  success,
+  message,
+}: {
+  success: boolean;
+  message: string;
+}) {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <CardTitle>
-            {status === "loading" && "Verifying..."}
-            {status === "success" && "Email Verified!"}
-            {status === "error" && "Verification Failed"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="pt-6 text-center space-y-4">
+          <div
+            className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto
+            ${success ? "bg-green-100" : "bg-red-100"}`}
+          >
+            {success ? (
+              <svg
+                className="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-6 h-6 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            )}
+          </div>
+
+          <h3 className="font-semibold text-lg">
+            {success ? "Email Verified!" : "Verification Failed"}
+          </h3>
+
           <p className="text-sm text-muted-foreground">{message}</p>
-          {status === "success" && (
-            <Button asChild>
-              <Link href="/login">Go to Login</Link>
-            </Button>
-          )}
-          {status === "error" && (
-            <Button variant="outline" asChild>
-              <Link href="/register">Back to Register</Link>
-            </Button>
-          )}
+
+          <Button asChild className="w-full">
+            <Link href={success ? "/login" : "/register"}>
+              {success ? "Go to Login" : "Back to Register"}
+            </Link>
+          </Button>
         </CardContent>
       </Card>
     </div>
