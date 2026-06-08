@@ -1,7 +1,8 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/db/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { isBefore } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -38,7 +39,7 @@ async function verifyToken(
     }
 
     // Check token expiry (24 hours)
-    if (user.emailVerifyExpires && user.emailVerifyExpires < new Date()) {
+    if (user.emailVerifyExpires && isBefore(user.emailVerifyExpires, new Date())) {
       // Clear the expired token but keep the account — user can request a new link
       await prisma.user.update({
         where: { id: user.id },

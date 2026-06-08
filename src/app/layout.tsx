@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, Roboto, Roboto_Slab } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { AppProviders } from "@/providers/app-providers";
 
 const robotoSlabHeading = Roboto_Slab({subsets:['latin'],variable:'--font-heading'});
 
@@ -30,9 +31,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable, robotoSlabHeading.variable)}
+      className={cn("min-h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable, robotoSlabHeading.variable)}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-background text-foreground antialiased">
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/server/auth/auth-options";
 import { redirect } from "next/navigation";
-import ForgotPasswordForm from "./_components/ForgotPasswordForm";
+import { ForgotPasswordForm } from "@/features/auth";
 
 export const metadata: Metadata = {
   title: "Forgot Password — AI Interview Prep",
@@ -21,7 +21,7 @@ export default async function ForgotPasswordPage() {
             Forgot password?
           </h1>
           <p className="text-muted-foreground mt-2">
-            Enter your email and we'll send a reset link.
+            Enter your email and we&apos;ll send a reset link.
           </p>
         </div>
         <ForgotPasswordForm />

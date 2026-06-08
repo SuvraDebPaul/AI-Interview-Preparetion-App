@@ -9,6 +9,7 @@ declare module "next-auth" {
 
   interface User {
     id: string;
+    rememberMe?: boolean; // passed from authorize() → jwt callback
   }
 }
 
@@ -16,5 +17,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     picture?: string | null;
+    rememberMe?: boolean;
   }
 }

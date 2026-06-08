@@ -18,6 +18,7 @@ model User {
   emailVerifyExpires   DateTime?
   passwordResetToken   String?   @unique
   passwordResetExpires DateTime?
+  passwordChangedAt    DateTime?           // JWT invalidation — set on every password change
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

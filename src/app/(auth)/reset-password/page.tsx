@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import ResetPasswordForm from "./_components/ResetPasswordForm";
+import { ResetPasswordForm } from "@/features/auth";
 
 export const metadata: Metadata = {
   title: "Reset Password — AI Interview Prep",
