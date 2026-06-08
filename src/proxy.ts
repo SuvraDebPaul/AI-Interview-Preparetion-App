@@ -5,8 +5,6 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 // ── Upstash Rate Limiter ──────────────────────────────────────
-// Sliding window: 10 login attempts per IP per 1 minute
-// Works across all serverless instances (multi-region safe)
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
   limiter: Ratelimit.slidingWindow(10, "1 m"),
@@ -19,8 +17,6 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Rate limiting — only for credentials login ────────────
-  // Must return EARLY — this route has no session yet,
-  // must not fall through to the auth guard below
   if (pathname === "/api/auth/callback/credentials") {
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
