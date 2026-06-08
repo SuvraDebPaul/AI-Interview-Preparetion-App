@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -22,8 +22,16 @@ interface Props {
 export default function ResetPasswordForm({ token }: Props) {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
+  const [serverErrorCode, setServerErrorCode] = useState("");
   const [success, setSuccess] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Redirect after success — useEffect ensures cleanup if component unmounts
+  useEffect(() => {
+    if (!success) return;
+    const timer = setTimeout(() => router.push("/login"), 2000);
+    return () => clearTimeout(timer);
+  }, [success, router]);
 
   const {
     register,
@@ -35,6 +43,7 @@ export default function ResetPasswordForm({ token }: Props) {
 
   function onSubmit(values: ResetPassword) {
     setServerError("");
+    setServerErrorCode("");
 
     const formData = new FormData();
     formData.set("password", values.password);
@@ -45,9 +54,10 @@ export default function ResetPasswordForm({ token }: Props) {
 
       if (result.success) {
         setSuccess(result.message);
-        setTimeout(() => router.push("/login"), 2000);
+        // Redirect handled by useEffect above
       } else {
         setServerError(result.error);
+        setServerErrorCode(result.code ?? "");
       }
     });
   }
@@ -88,7 +98,7 @@ export default function ResetPasswordForm({ token }: Props) {
           {serverError && (
             <div className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-md">
               {serverError}
-              {serverError.includes("expired") && (
+              {serverErrorCode === "TOKEN_EXPIRED" && (
                 <Link
                   href="/forgot-password"
                   className="block mt-1 text-primary hover:underline"
@@ -144,6 +154,27 @@ export default function ResetPasswordForm({ token }: Props) {
 
         <CardFooter className="flex flex-col gap-3 pb-6">
           <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending && (
+              <svg
+                className="mr-2 h-4 w-4 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+            )}
             {isPending ? "Resetting..." : "Reset password"}
           </Button>
 

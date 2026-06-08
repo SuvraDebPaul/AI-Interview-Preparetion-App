@@ -1,19 +1,25 @@
 import { z } from "zod";
 
+// ── Shared field schemas ───────────────────────────────────────
+// Single source of truth — reused in register + reset password
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(100, "Password too long")
+  .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Must contain at least one number");
+
+// ── Schemas ───────────────────────────────────────────────────
 export const registerSchema = z
   .object({
     name: z
       .string()
-      .min(2, "Name must be at least 2 character")
-      .max(50, "Name must be under 50 character")
-      .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
+      .min(2, "Name must be at least 2 characters")
+      .max(50, "Name must be under 50 characters")
+      // Allow letters (any script), spaces, hyphens, apostrophes — supports international names
+      .regex(/^[\p{L}\s'\-]+$/u, "Name can only contain letters, spaces, hyphens, and apostrophes"),
     email: z.email("Invalid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 character")
-      .max(100, "Password too long")
-      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Must contain at least one number"),
+    password: passwordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -23,7 +29,7 @@ export const registerSchema = z
 
 export const loginSchema = z.object({
   email: z.email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(1, "Password is required").max(100, "Password too long"),
 });
 
 export const forgetPasswordSchema = z.object({
@@ -32,12 +38,7 @@ export const forgetPasswordSchema = z.object({
 
 export const resetPasswordSchema = z
   .object({
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 character")
-      .max(100, "Password too long")
-      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Must contain at least one number"),
+    password: passwordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {

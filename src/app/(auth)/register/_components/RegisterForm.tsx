@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import ImageUpload from "@/components/shared/ImageUpload";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 export default function RegisterForm() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -29,7 +29,7 @@ export default function RegisterForm() {
   });
 
   // File select → শুধু state-এ রাখো, upload হবে না
-  async function handleImageChange(file: File | null) {
+  function handleImageChange(file: File | null) {
     setImageFile(file);
   }
   // Form submit
@@ -49,8 +49,7 @@ export default function RegisterForm() {
           method: "POST",
           body: formData,
         });
-        const text = await res.text();
-        const data = JSON.parse(text);
+        const data = await res.json();
 
         if (!res.ok) {
           setServerError(data.error?.message || "Image upload failed");
@@ -125,7 +124,7 @@ export default function RegisterForm() {
               placeholder="Your Full Name"
               disabled={isPending}
               {...register("name")}
-              className={clsx(
+              className={cn(
                 "h-9 text-sm",
                 errors.name ? "border-red-400 focus-visible:ring-red-400" : "",
               )}
@@ -144,7 +143,7 @@ export default function RegisterForm() {
               placeholder="you@example.com"
               disabled={isPending}
               {...register("email")}
-              className={clsx(
+              className={cn(
                 "h-9 text-sm",
                 errors.email ? "border-red-400 focus-visible:ring-red-400" : "",
               )}
@@ -163,7 +162,7 @@ export default function RegisterForm() {
               placeholder="Min 8 chars, 1 uppercase, 1 number"
               disabled={isPending}
               {...register("password")}
-              className={clsx(
+              className={cn(
                 "h-9 text-sm",
                 errors.password
                   ? "border-red-400 focus-visible:ring-red-400"
@@ -184,7 +183,7 @@ export default function RegisterForm() {
               placeholder="Repeat your password"
               disabled={isPending}
               {...register("confirmPassword")}
-              className={clsx(
+              className={cn(
                 "h-9 text-sm",
                 errors.confirmPassword
                   ? "border-red-400 focus-visible:ring-red-400"
@@ -200,11 +199,28 @@ export default function RegisterForm() {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3 pb-6">
-          <Button
-            type="submit"
-            className={clsx("w-full", isPending ? "animate-spin" : "")}
-            disabled={isPending}
-          >
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending && (
+              <svg
+                className="mr-2 h-4 w-4 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+            )}
             {isPending
               ? imageFile
                 ? "Uploading & creating account..."

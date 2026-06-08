@@ -1,12 +1,19 @@
 import { Resend } from "resend";
+import { logger } from "@/lib/logger";
+
+if (!process.env.RESEND_API_KEY) throw new Error("Missing RESEND_API_KEY");
+if (!process.env.EMAIL_FROM) throw new Error("Missing EMAIL_FROM");
+if (!process.env.NEXTAUTH_URL) throw new Error("Missing NEXTAUTH_URL");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const EMAIL_FROM = process.env.EMAIL_FROM;
+const APP_URL = process.env.NEXTAUTH_URL;
 
 export async function sendVerificationEmail(email: string, token: string) {
-  const verifyUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${APP_URL}/verify-email?token=${token}`;
 
   const { data, error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM!,
+    from: EMAIL_FROM,
     to: email,
     subject: "Verify your email — AI Interview Prep",
     html: `
@@ -23,20 +30,20 @@ export async function sendVerificationEmail(email: string, token: string) {
       </div>
     `,
   });
-  console.log("Resend result:", data);
+
   if (error) {
-    console.error("Email send error:", error);
+    logger.error("Verification email failed", { to: email, error: error.message });
     throw new Error(error.message);
   }
 
-  console.log("Verification email sent:", data?.id);
+  logger.info("Verification email sent", { to: email, emailId: data?.id });
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
-  const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+  const resetUrl = `${APP_URL}/reset-password?token=${token}`;
 
   const { data, error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM!,
+    from: EMAIL_FROM,
     to: email,
     subject: "Reset your password — AI Interview Prep",
     html: `
@@ -54,9 +61,9 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     `,
   });
   if (error) {
-    console.error("Email send error:", error);
+    logger.error("Password reset email failed", { to: email, error: error.message });
     throw new Error(error.message);
   }
 
-  console.log("Reset email sent:", data?.id);
+  logger.info("Password reset email sent", { to: email, emailId: data?.id });
 }

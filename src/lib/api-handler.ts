@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AppError } from "@/lib/error";
 import { ZodError } from "zod";
 import { Prisma } from "@/generated/prisma/client";
+import { logger } from "@/lib/logger";
 
 // ── Error Response Shape ────────────────────────────────────
 interface ErrorResponse {
@@ -109,7 +110,7 @@ function handleError(error: unknown): NextResponse<ErrorResponse> {
   }
 
   // 5. Unknown/unexpected error — log it, hide details from client
-  console.error("[UNHANDLED ERROR]", error);
+  logger.error("[UNHANDLED ERROR]", error);
 
   return NextResponse.json(
     {
@@ -142,7 +143,7 @@ export function successResponse<T>(
 // ── The Main Wrapper — Express এর catchAsync এর equivalent ──
 type RouteHandler = (
   req: NextRequest,
-  context?: { params: Record<string, string> },
+  context?: { params: Promise<Record<string, string>> },
 ) => Promise<NextResponse>;
 
 export function withErrorHandler(handler: RouteHandler): RouteHandler {

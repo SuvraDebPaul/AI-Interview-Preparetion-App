@@ -20,12 +20,16 @@ async function verifyToken(
   try {
     const user = await prisma.user.findUnique({
       where: { emailVerifyToken: token },
+      select: { id: true, emailVerified: true, emailVerifyExpires: true },
     });
 
     if (!user) {
       return {
         success: false,
-        message: "Invalid or expired verification link. Please register again.",
+        // Don't say "register again" — the account may still exist with a cleared token.
+        // User should go to login and use "Forgot password" or contact support.
+        message:
+          "This verification link is invalid or has already been used. Please sign in or request a new link.",
       };
     }
 
@@ -33,11 +37,25 @@ async function verifyToken(
       return "redirect";
     }
 
+    // Check token expiry (24 hours)
+    if (user.emailVerifyExpires && user.emailVerifyExpires < new Date()) {
+      // Clear the expired token but keep the account — user can request a new link
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerifyToken: null, emailVerifyExpires: null },
+      });
+      return {
+        success: false,
+        message: "Verification link has expired. Please request a new one from the login page.",
+      };
+    }
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
         emailVerified: new Date(),
         emailVerifyToken: null,
+        emailVerifyExpires: null,
       },
     });
 
@@ -124,9 +142,7 @@ function VerifyResult({
           <p className="text-sm text-muted-foreground">{message}</p>
 
           <Button asChild className="w-full">
-            <Link href={success ? "/login" : "/register"}>
-              {success ? "Go to Login" : "Back to Register"}
-            </Link>
+            <Link href="/login">Go to Login</Link>
           </Button>
         </CardContent>
       </Card>

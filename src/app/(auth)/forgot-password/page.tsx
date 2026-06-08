@@ -1,4 +1,7 @@
 import { Metadata } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import ForgotPasswordForm from "./_components/ForgotPasswordForm";
 
 export const metadata: Metadata = {
@@ -6,7 +9,10 @@ export const metadata: Metadata = {
   description: "Reset your password via email.",
 };
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const session = await getServerSession(authOptions);
+  if (session) redirect("/dashboard");
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">

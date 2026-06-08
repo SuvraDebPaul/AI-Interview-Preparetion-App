@@ -15,6 +15,7 @@ model User {
   image                String?
   password             String?
   emailVerifyToken     String?   @unique
+  emailVerifyExpires   DateTime?
   passwordResetToken   String?   @unique
   passwordResetExpires DateTime?
   createdAt            DateTime  @default(now())
@@ -53,7 +54,7 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model VerficationToken {
+model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
